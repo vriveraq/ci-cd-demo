@@ -15,12 +15,15 @@ class TransactionRecord(BaseModel):
     is_fraud: int = Field(ge=0, le=1, description="Binary classification label")
 
 def fetch_fraud_data() -> pd.DataFrame:
-    # Fetches real Credit Card Fraud dataset directly from OpenML (Dataset ID: 42175 / creditcard)
-    print("Fetching dataset from OpenML...")
-    data = fetch_openml(data_id=42175, as_frame=True, parser="auto")
-    df = data.frame.sample(n=1000, random_state=42) # Sample 1000 rows for fast CI runs
-    return df
+    print("Fetching Synthetic Banking Fraud dataset from OpenML...")
+    # OpenML Dataset ID 42118 contains 'type', 'amount', 'isFraud'
+    data = fetch_openml(data_id=42118, as_frame=True, parser="auto")
+    df = data.frame.sample(n=1000, random_state=42).copy()
 
+    # Clean and rename to match schema
+    df = df.rename(columns={"amount": "transactionAmount", "type": "paymentType", "isFraud": "label"})
+    return df[["transactionAmount", "paymentType", "label"]]
+    
 def load_and_validate_fraud_data(csv_path="payment_fraud.csv") -> pd.DataFrame:
     """Ensures dataset exists, parses schema, and validates data quality with Pydantic."""
     if not os.path.exists(csv_path):
